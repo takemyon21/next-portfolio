@@ -53,7 +53,11 @@ export async function POST(request: Request) {
 
     return new Response('ok', { status: 200 });
   } catch (e: unknown) {
-    console.error('Webhook error', e?.stack || e);
+    if (e instanceof Error) {
+      console.error('Webhook error', e.stack || e.message);
+    } else {
+      console.error('Webhook error', e);
+    }
     return new Response('error', { status: 500 });
   }
 }
