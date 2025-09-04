@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     console.log('microCMS webhook ok', { topic, id: body?.id });
 
     return new Response('ok', { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('Webhook error', e?.stack || e);
     return new Response('error', { status: 500 });
   }
