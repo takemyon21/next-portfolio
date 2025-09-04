@@ -16,8 +16,8 @@ export default async function NotFound() {
         <p className="speech-bubble w-[300px] text-center absolute top-[80px] left-[50%] transform translate-[-50%] opacity-0 [&.is-active]:opacity-100 transition-[opacity] duration-600">そこからかえってみてね。</p>
       </div>
 
-      <Script id="live2dcubismcore" src="/live2dsdk/Samples/TypeScript/Demo/dist/Core/live2dcubismcore.js"></Script>
-      <Script id="live2d_index" type="module" src="/live2dsdk/Samples/TypeScript/Demo/dist/assets/index-BZY1jVSQ.js" strategy="afterInteractive"></Script>
+      <Script id="live2dcubismcore" src="/live2dSdk/Samples/TypeScript/Demo/dist/Core/live2dcubismcore.js"></Script>
+      <Script id="live2d_index" type="module" src="/live2dSdk/Samples/TypeScript/Demo/dist/assets/index-BZY1jVSQ.js" strategy="afterInteractive"></Script>
       <Script id="my-custom-script" strategy="afterInteractive">
         {`
           const bubbles = document.querySelectorAll(".speech-bubble");
