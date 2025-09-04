@@ -1,41 +1,89 @@
-import Image from 'next/image';
+// app/page.tsx
+import Link from "next/link";
+import { client } from "../libs/microcms";
+import FvSwiper from "./components/FvSwiper";
+import FvSwiper2 from "./components/FvSwiper2";
 
-export default function Home() {
+// ブログ記事の型定義
+type Props = {
+  id: string;
+  title: string;
+};
+
+// microCMSからブログ記事を取得
+async function getBlogPosts(): Promise<Props[]> {
+  const data = await client.get({
+    endpoint: "blog", // 'blog'はmicroCMSのエンドポイント名
+    queries: {
+      fields: "id,title", // idとtitleを取得
+      limit: 5, // 最新の5件を取得
+    },
+  });
+  return data.contents;
+}
+
+async function getBloWorks(): Promise<Props[]> {
+  const data = await client.get({
+    endpoint: "works", // 'works'はmicroCMSのエンドポイント名
+    queries: {
+      fields: "id,title", // idとtitleを取得
+      limit: 5, // 最新の5件を取得
+    },
+  });
+  return data.contents;
+}
+
+export default async function Home() {
+  const posts = await getBlogPosts();
+  const works = await getBloWorks();
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image className="dark:invert" src="/next.svg" alt="Next.js logo" width={180} height={38} priority />
-        <ol className="font-mono test-class list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">src/app/page.tsx</code>.
-          </li>
-          <li className="tracking-[-.01em]">Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto" href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app" target="_blank" rel="noopener noreferrer">
-            <Image className="dark:invert" src="/vercel.svg" alt="Vercel logomark" width={20} height={20} />
-            Deploy now
-          </a>
-          <a className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]" href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app" target="_blank" rel="noopener noreferrer">
-            Read our docs
-          </a>
+    <>
+      <div className="fv h-[600px] relative overflow-hidden mt-[-72px]">
+        <div className="flex justify-end items-center h-full mr-[40px]">
+          <FvSwiper />
+          <FvSwiper2 />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a className="flex items-center gap-2 hover:underline hover:underline-offset-4" href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app" target="_blank" rel="noopener noreferrer">
-          <Image aria-hidden src="/file.svg" alt="File icon" width={16} height={16} />
-          Learn
-        </a>
-        <a className="flex items-center gap-2 hover:underline hover:underline-offset-4" href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app" target="_blank" rel="noopener noreferrer">
-          <Image aria-hidden src="/window.svg" alt="Window icon" width={16} height={16} />
-          Examples
-        </a>
-        <a className="flex items-center gap-2 hover:underline hover:underline-offset-4" href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app" target="_blank" rel="noopener noreferrer">
-          <Image aria-hidden src="/globe.svg" alt="Globe icon" width={16} height={16} />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        <div className="fv__text-contents absolute top-[50%] left-[10%] translate-y-[-50%]">
+          <p className="text-[40px] font-[500] tracking-tight leading-[1.5]">Take Web Coder</p>
+          <p className="text-[14px] text-[#666] flex justify-start items-center gap-[16px] before:w-[30%] before:h-[1px] before:bg-[#666]">Welcome to my portfolio site!</p>
+        </div>
+      </div>
+
+      <section className="blog__section">
+        <div className="inner ">
+          <h2>ブログ記事一覧</h2>
+          <ul>
+            {posts.map((post) => (
+              <li key={post.id}>
+                <Link href={`/blog/${post.id}`}>
+                  {" "}
+                  {/* 記事へのリンクを生成 */}
+                  {post.title} {/* タイトルを表示 */}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section className="works__section">
+        <div className="inner ">
+          <h2>制作実績一覧</h2>
+          <ul>
+            {works.map((work) => (
+              <li key={work.id}>
+                <Link href={`/works/${work.id}`}>
+                  {" "}
+                  {/* 記事へのリンクを生成 */}
+                  {work.title} {/* タイトルを表示 */}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    </>
   );
 }
