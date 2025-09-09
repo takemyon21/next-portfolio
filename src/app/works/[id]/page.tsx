@@ -44,10 +44,10 @@ async function fetchWorksPost(id: string): Promise<WorksPost> {
 }
 
 // 一部環境で params が Promise になる事例があるため両対応
-export default async function Page(props: { params: { id: string } | Promise<{ id: string }> }) {
-  const params = typeof (props.params as unknown) === 'object' && props.params !== null && typeof (props.params as { then?: unknown }).then === 'function' ? await (props.params as Promise<{ id: string }>) : (props.params as { id: string });
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
-  const post = await fetchWorksPost(params.id); // ここに来る時点で 404 は notFound() 済み
+  const post = await fetchWorksPost(id); // 404は fetch 内で notFound() 済み
 
   const formattedDate = dayjs(post.publishedAt).format('YY.MM.DD');
   const categories = Array.isArray(post.category) ? post.category : [];

@@ -14,40 +14,36 @@ type BlogPost = {
   eyecatch?: Eyecatch;
 };
 
-// 必要な環境変数を読み込み（未設定なら直ちに明示エラー）
+// 必要な環境変数を確認（未設定ならビルド失敗させる）
 const { MICROCMS_SERVICE_DOMAIN, MICROCMS_API_KEY } = process.env;
 if (!MICROCMS_SERVICE_DOMAIN || !MICROCMS_API_KEY) {
   throw new Error('Required env vars are missing: MICROCMS_SERVICE_DOMAIN and/or MICROCMS_API_KEY.');
 }
 
-// 404 は必ず notFound() を“返す”。throw しない。
 async function fetchBlogPost(id: string): Promise<BlogPost> {
   const url = `https://${MICROCMS_SERVICE_DOMAIN}.microcms.io/api/v1/blog/${encodeURIComponent(id)}`;
 
   const res = await fetch(url, {
     headers: { 'X-MICROCMS-API-KEY': MICROCMS_API_KEY as string },
-    // 開発中に毎回取りたい場合のみ:
-    // cache: "no-store",
-    // ISR したい場合のみ:
-    // next: { revalidate: 60 },
+    // cache: 'no-store',         // 開発中に毎回最新を取りたい場合
+    // next: { revalidate: 60 },  // ISRしたい場合
   });
 
   if (res.status === 404) {
-    // ここで関数を終了させる（throw ではなく return notFound()）
+    // notFound() は never を返す（= ここでレンダー中断）
     return notFound();
   }
   if (!res.ok) {
-    // 本当の障害のみ 500 扱い
     throw new Error(`microCMS error: ${res.status}`);
   }
   return (await res.json()) as BlogPost;
 }
 
-// 一部環境で params が Promise になる事例があるため両対応
-export default async function Page(props: { params: { id: string } | Promise<{ id: string }> }) {
-  const params = typeof (props.params as unknown) === 'object' && props.params !== null && typeof (props.params as { then?: unknown }).then === 'function' ? await (props.params as Promise<{ id: string }>) : (props.params as { id: string });
+// ✅ params は Promise として受け取る
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
-  const post = await fetchBlogPost(params.id); // ここに来る時点で 404 は notFound() 済み
+  const post = await fetchBlogPost(id); // 404は fetch 内で notFound() 済み
 
   const formattedDate = dayjs(post.publishedAt).format('YY.MM.DD');
   const categories = Array.isArray(post.category) ? post.category : [];
