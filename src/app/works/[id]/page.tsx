@@ -1,65 +1,83 @@
-// app/blog/[id]/page.tsx
-import { client } from "../../../libs/microcms";
-import Image from "next/image";
-import dayjs from "dayjs";
+// app/works/[id]/page.tsx
+import { notFound } from 'next/navigation';
+import Image from 'next/image';
+import dayjs from 'dayjs';
 
-// ブログ記事の型定義
-type Props = {
+type Category = { id: string; name: string };
+type Eyecatch = { url: string };
+type WorksPost = {
   id: string;
   title: string;
   content: string;
   publishedAt: string;
-  // category: { name: string };
-  category: { id: string; name: string }[];
-  eyecatch: { url: string };
+  category?: Category[];
+  eyecatch?: Eyecatch;
 };
 
-// microCMSから特定の記事を取得
-async function getWorksPost(id: string): Promise<Props> {
-  const data = await client.get({
-    endpoint: `works/${id}`,
-  });
-  return data;
+// 必要な環境変数を読み込み（未設定なら直ちに明示エラー）
+const { MICROCMS_SERVICE_DOMAIN, MICROCMS_API_KEY } = process.env;
+if (!MICROCMS_SERVICE_DOMAIN || !MICROCMS_API_KEY) {
+  throw new Error('Required env vars are missing: MICROCMS_SERVICE_DOMAIN and/or MICROCMS_API_KEY.');
 }
 
-// 記事詳細ページの生成
-export default async function BlogWorksPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params; // IDを取得
-  const work = await getWorksPost(id);
+// 404 は必ず notFound() を“返す”。throw しない。
+async function fetchWorksPost(id: string): Promise<WorksPost> {
+  const url = `https://${MICROCMS_SERVICE_DOMAIN}.microcms.io/api/v1/works/${encodeURIComponent(id)}`;
 
-  // dayjsを使ってpublishedAtをYY.MM.DD形式に変換
-  const formattedDate = dayjs(work.publishedAt).format("YY.MM.DD");
-  const markup = { __html: work.content };
+  const res = await fetch(url, {
+    headers: { 'X-MICROCMS-API-KEY': MICROCMS_API_KEY },
+    // 開発中に毎回取りたい場合のみ:
+    // cache: "no-store",
+    // ISR したい場合のみ:
+    // next: { revalidate: 60 },
+  });
+
+  if (res.status === 404) {
+    // ここで関数を終了させる（throw ではなく return notFound()）
+    return notFound();
+  }
+  if (!res.ok) {
+    // 本当の障害のみ 500 扱い
+    throw new Error(`microCMS error: ${res.status}`);
+  }
+  return (await res.json()) as WorksPost;
+}
+
+// 一部環境で params が Promise になる事例があるため両対応
+export default async function Page(props: { params: { id: string } | Promise<{ id: string }> }) {
+  const params = typeof (props.params as any)?.then === 'function' ? await (props.params as Promise<{ id: string }>) : (props.params as { id: string });
+
+  const post = await fetchWorksPost(params.id); // ここに来る時点で 404 は notFound() 済み
+
+  const formattedDate = dayjs(post.publishedAt).format('YY.MM.DD');
+  const categories = Array.isArray(post.category) ? post.category : [];
+  const markup = { __html: post.content };
 
   return (
     <>
-      <h2 className="text-[64px]">{work.title}</h2> {/* タイトルを表示 */}
-      <div>{formattedDate}</div> {/* 日付を表示 */}
-      <div className="my-[32px]">
-        <Image src={work.eyecatch.url} alt={work.title} width={800} height={600} sizes="(max-width: 768px) 100vw, 800px" priority />
-      </div>
-      {/* <div>カテゴリー：{work.category && work.category.name}</div> カテゴリーを表示 */}
+      <h2 className="text-[64px]">{post.title}</h2>
+
+      {post.eyecatch?.url && (
+        <div className="my-[32px]">
+          <Image src={post.eyecatch.url} alt={post.title} width={800} height={600} sizes="(max-width: 768px) 100vw, 800px" priority />
+        </div>
+      )}
+
+      <div>{formattedDate}</div>
+
       <div>
         カテゴリー：
-        {work.category &&
-          work.category.map((cat, index) => (
-            <span key={cat.id}>
-              {cat.name}
-              {index < work.category.length - 1 ? ", " : ""}
-            </span>
-          ))}
-      </div>{" "}
-      {/* カテゴリーを表示 */}
-      <div dangerouslySetInnerHTML={markup} /> {/* 記事本文を表示 */}
+        {categories.length
+          ? categories.map((c, i) => (
+              <span key={c.id}>
+                {c.name}
+                {i < categories.length - 1 ? ', ' : ''}
+              </span>
+            ))
+          : 'なし'}
+      </div>
+
+      <div dangerouslySetInnerHTML={markup} />
     </>
   );
-}
-
-// 静的パスを生成
-export async function generateStaticParams() {
-  const contentIds = await client.getAllContentIds({ endpoint: "works" });
-
-  return contentIds.map((contentId) => ({
-    id: contentId, // 各記事のIDをパラメータとして返す
-  }));
 }

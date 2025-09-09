@@ -1,7 +1,32 @@
+// app/not-found.tsx
+'use client';
+import { useEffect } from 'react';
 import Script from 'next/script';
 
 // app/not-found.tsx
-export default async function NotFound() {
+export default function NotFound() {
+  useEffect(() => {
+    const PRELOAD_ID = 'preload-live2d-on-404';
+    const href = '/live2dSdk/Samples/TypeScript/Demo/dist/assets/index-BZY1jVSQ.js';
+
+    // 既に同じIDのpreloadがあれば追加しない
+    if (!document.getElementById(PRELOAD_ID)) {
+      const link = document.createElement('link');
+      link.id = PRELOAD_ID;
+      link.rel = 'preload';
+      link.as = 'script';
+      link.href = href;
+      link.crossOrigin = 'anonymous';
+      document.head.appendChild(link);
+    }
+
+    // 404ページを離れたらpreloadを除去（404限定表示にしたい場合）
+    return () => {
+      const exist = document.getElementById(PRELOAD_ID);
+      if (exist) exist.remove();
+    };
+  }, []);
+
   return (
     <>
       <h2>404</h2>
@@ -17,7 +42,7 @@ export default async function NotFound() {
       </div>
 
       <Script id="live2dcubismcore" src="/live2dSdk/Samples/TypeScript/Demo/dist/Core/live2dcubismcore.js"></Script>
-      <Script id="live2d_index" type="module" src="/live2dSdk/Samples/TypeScript/Demo/dist/assets/index-BZY1jVSQ.js" strategy="afterInteractive"></Script>
+      <Script id="live2d_index" type="module" src="/live2dSdk/Samples/TypeScript/Demo/dist/assets/index-BZY1jVSQ.js" crossOrigin="anonymous" strategy="afterInteractive"></Script>
       <Script id="my-custom-script" strategy="afterInteractive">
         {`
           const bubbles = document.querySelectorAll(".speech-bubble");
