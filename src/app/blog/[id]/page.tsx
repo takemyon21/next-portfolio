@@ -25,7 +25,7 @@ async function fetchBlogPost(id: string): Promise<BlogPost> {
   const url = `https://${MICROCMS_SERVICE_DOMAIN}.microcms.io/api/v1/blog/${encodeURIComponent(id)}`;
 
   const res = await fetch(url, {
-    headers: { 'X-MICROCMS-API-KEY': MICROCMS_API_KEY },
+    headers: { 'X-MICROCMS-API-KEY': MICROCMS_API_KEY as string },
     // 開発中に毎回取りたい場合のみ:
     // cache: "no-store",
     // ISR したい場合のみ:
@@ -45,7 +45,7 @@ async function fetchBlogPost(id: string): Promise<BlogPost> {
 
 // 一部環境で params が Promise になる事例があるため両対応
 export default async function Page(props: { params: { id: string } | Promise<{ id: string }> }) {
-  const params = typeof (props.params as any)?.then === 'function' ? await (props.params as Promise<{ id: string }>) : (props.params as { id: string });
+  const params = typeof (props.params as unknown) === 'object' && props.params !== null && typeof (props.params as { then?: unknown }).then === 'function' ? await (props.params as Promise<{ id: string }>) : (props.params as { id: string });
 
   const post = await fetchBlogPost(params.id); // ここに来る時点で 404 は notFound() 済み
 
